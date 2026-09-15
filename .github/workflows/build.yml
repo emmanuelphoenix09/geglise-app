@@ -2,12 +2,13 @@ name: Générer un APK Android
 
 on:
   push:
-    branches: [ "main", "principal", "maître" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Consulter le dépôt
         uses: actions/checkout@v4
@@ -15,13 +16,13 @@ jobs:
       - name: Configurer Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '17'
+          distribution: zulu
+          java-version: "17"
 
       - name: Configurer Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Installer Cordova
         run: npm install -g cordova
@@ -29,33 +30,29 @@ jobs:
       - name: Initialiser le projet Cordova
         run: |
           cordova create cordovaApp com.eglise.app GEglise
+
           cd cordovaApp
           rm -rf www/*
-          cp -r ../* www/ || true
-          rm -rf www/cordovaApp
+          
+          cp ../index.html www/
+          cp ../icon.png www/
 
-      - name: Configurer l'icône dans config.xml
+      - name: Configurer l'icône
         run: |
           cd cordovaApp
-          if [ -f www/icon.jpg ]; then
-            sed -i '/<\/widget>/i \    <icône src="www/icon.jpg" \/>' config.xml
-          elif [ -f www/icone.jpg ]; then
-            sed -i '/<\/widget>/i \    <icône src="www/icone.jpg" \/>' config.xml
-          elif [ -f www/icon.png ]; then
-            sed -i '/<\/widget>/i \    <icône src="www/icon.png" \/>' config.xml
-          fi
+          sed -i '/<\/widget>/i\    <icon src="www/icon.png" />' config.xml
 
-      - name: Ajouter la plateforme Android
+      - name: Ajouter Android
         run: |
           cd cordovaApp
           cordova platform add android
 
-      - name: Compiler l'APK Android
+      - name: Compiler l'APK
         run: |
           cd cordovaApp
           cordova build android --debug
 
-      - name: Archiver l'APK généré
+      - name: Archiver l'APK
         uses: actions/upload-artifact@v4
         with:
           name: G-Eglise-APK
