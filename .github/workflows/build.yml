@@ -1,40 +1,62 @@
-name: Build Android APK
+name: Générer un APK Android
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main", "principal", "maître" ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      - name: Consulter le dépôt
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Configurer Java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Node.js
+      - name: Configurer Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Build APK with Cordova
-        run: |
-          npm install -g cordova
-          cordova create app com.geglise.app "GEglise"
-          cd app
-          rm -rf www/*
-          cp -r ../* www/ 2>/dev/null || true
-          cordova platform add android
-          cordova build android --no-telemetry
+      - name: Installer Cordova
+        run: npm install -g cordova
 
-      - name: Upload APK
+      - name: Initialiser le projet Cordova
+        run: |
+          cordova create cordovaApp com.eglise.app GEglise
+          cd cordovaApp
+          rm -rf www/*
+          cp -r ../* www/ || true
+          rm -rf www/cordovaApp
+
+      - name: Configurer l'icône dans config.xml
+        run: |
+          cd cordovaApp
+          if [ -f www/icon.jpg ]; then
+            sed -i '/<\/widget>/i \    <icône src="www/icon.jpg" \/>' config.xml
+          elif [ -f www/icone.jpg ]; then
+            sed -i '/<\/widget>/i \    <icône src="www/icone.jpg" \/>' config.xml
+          elif [ -f www/icon.png ]; then
+            sed -i '/<\/widget>/i \    <icône src="www/icon.png" \/>' config.xml
+          fi
+
+      - name: Ajouter la plateforme Android
+        run: |
+          cd cordovaApp
+          cordova platform add android
+
+      - name: Compiler l'APK Android
+        run: |
+          cd cordovaApp
+          cordova build android --debug
+
+      - name: Archiver l'APK généré
         uses: actions/upload-artifact@v4
         with:
           name: G-Eglise-APK
-          path: app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          path: cordovaApp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
